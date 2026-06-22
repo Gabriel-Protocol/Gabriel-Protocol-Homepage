@@ -165,7 +165,7 @@ export function MainTab({ userId }: { userId: string }) {
              <div className="absolute inset-0 flex items-center justify-center">
                  <iframe 
                    title="Mindmap Figma" 
-                   src="https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2F" 
+                   src="https://www.figma.com/board/lpkNGdGBGM8eRenQZvGDcX/GB---Goals?t=cDi6auQGNZfUHAAV-1" 
                    className="w-full h-full opacity-5 hover:opacity-100 transition-opacity" 
                    allowFullScreen 
                  />
