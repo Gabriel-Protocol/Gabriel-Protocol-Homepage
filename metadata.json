@@ -1,0 +1,6 @@
+{
+  "name": "Gabriel Protocol Hub",
+  "description": "Main hub connecting web B, C, and D with SSO and centralized data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
