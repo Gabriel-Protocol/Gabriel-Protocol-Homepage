@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/Gabriel-Protocol-Homepage/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
