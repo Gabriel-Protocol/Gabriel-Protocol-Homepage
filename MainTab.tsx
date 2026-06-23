@@ -3,7 +3,7 @@ import { useProductivityData, useMoneyData } from '../hooks/useFirebaseData';
 import { Clock, CalendarCheck, Activity, BarChart4, WalletCards, TrendingDown, CalendarDays, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 
-export function MainTab({ userId }: { userId: string }) {
+export function MainTab({ userId, figmaShareUrl, figmaEmbedUrl }: { userId: string; figmaShareUrl: string; figmaEmbedUrl: string }) {
   const prodData = useProductivityData(userId);
   const moneyData = useMoneyData(userId);
 
@@ -161,11 +161,11 @@ export function MainTab({ userId }: { userId: string }) {
         </h3>
         <Card className="overflow-hidden">
           <div className="aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center p-6 border-b border-slate-100 dark:border-slate-800 relative">
-             {/* Note: This is where user places their Figma iframe */<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/board/lpkNGdGBGM8eRenQZvGDcX/GB---Goals?node-id=0-1&embed-host=share" allowfullscreen></iframe>}
+             {/* Note: This is where user places their Figma iframe */<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src={figmaEmbedUrl} allowFullScreen></iframe>}
              <div className="absolute inset-0 flex items-center justify-center">
                  <iframe 
                    title="Mindmap Figma" 
-                   src="https://www.figma.com/board/lpkNGdGBGM8eRenQZvGDcX/GB---Goals?t=cDi6auQGNZfUHAAV-1" 
+                   src={figmaShareUrl} 
                    className="w-full h-full opacity-5 hover:opacity-100 transition-opacity" 
                    allowFullScreen 
                  />
