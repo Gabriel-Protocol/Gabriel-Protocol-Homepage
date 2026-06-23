@@ -23,7 +23,7 @@ export function MainTab({ userId }: { userId: string }) {
             GB - Productivity
           </h3>
           <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-            <a href="/productivity" target="_blank" rel="noreferrer">
+            <a href="/GB-Productivity" target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-2" />
               Open App
             </a>
@@ -90,7 +90,7 @@ export function MainTab({ userId }: { userId: string }) {
             GB - Money Management
           </h3>
           <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-            <a href="/money" target="_blank" rel="noreferrer">
+            <a href="/GB-MoneyManagement" target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-2" />
               Open App
             </a>
