@@ -97,7 +97,7 @@ export default function App() {
             <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-inner">
                <ShieldCheck className="h-4 w-4" />
             </div>
-            Protocol Hub
+            Gabriel Protocol
           </div>
         </div>
         
@@ -159,7 +159,7 @@ export default function App() {
       <div className="md:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
          <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-50">
             <ShieldCheck className="h-5 w-5 text-teal-600" />
-            Protocol Hub
+            Gabriel Protocol
          </div>
          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2">
            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

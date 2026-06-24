@@ -11,8 +11,8 @@ export function MainTab({ userId, figmaShareUrl, figmaEmbedUrl }: { userId: stri
     <div className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full space-y-10">
       
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-50 mb-1">Hallo Chetar.</h2>
-        <p className="text-slate-500 mb-6">Selamat datang di Dashboard Gabriel Protocol.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-50 mb-1">Halo Chetar</h2>
+        <p className="text-slate-500 mb-6">Ini adalah Dashboard dari Gabriel Protocol</p>
       </div>
 
       {/* Productivity Section */}
