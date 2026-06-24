@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Goal, useGoalsData } from '../hooks/useFirebaseData';
-import { Target, Flag, CalendarDays, Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Target, Flag, CalendarDays, Plus, Trash2, CheckCircle2, Circle, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function GoalsTab({ userId, figmaShareUrl, figmaEmbedUrl }: { userId: string; figmaShareUrl: string; figmaEmbedUrl: string }) {
@@ -85,25 +85,35 @@ export function GoalsTab({ userId, figmaShareUrl, figmaEmbedUrl }: { userId: str
 
       {/* Mission Panel (Mindmaps) */}
       <section>
-        <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-          <span className="w-2 h-6 bg-slate-800 dark:bg-slate-400 rounded-full inline-block"></span>
-          Mission Mindmap
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <span className="w-2 h-6 bg-slate-800 dark:bg-slate-400 rounded-full inline-block"></span>
+            Mission Mindmap
+          </h3>
+          {figmaShareUrl && (
+            <Button variant="ghost" size="sm" asChild>
+              <a href={figmaShareUrl} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Buka di Figma
+              </a>
+            </Button>
+          )}
+        </div>
         <Card className="overflow-hidden">
-          <div className="aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center p-6 border-b border-slate-100 dark:border-slate-800 relative">
-             <div className="absolute inset-0 flex items-center justify-center">
-                 <iframe 
-                   title="Mindmap Figma" 
-                   src={figmaShareUrl} 
-                   className="w-full h-full opacity-5 hover:opacity-100 transition-opacity" 
-                   allowFullScreen 
-                 />
-             </div>
-             
-             <div className="text-center z-10 pointer-events-none">
-                <div className="text-slate-400 dark:text-slate-500 font-medium mb-2">Figma Embed Placeholder</div>
-                <p className="text-sm text-slate-400">Embed URL should be replaced in source code</p>
-             </div>
+          <div className="aspect-[21/9] w-full bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-800 relative min-h-[450px]">
+            {figmaEmbedUrl ? (
+              <iframe 
+                title="Mindmap Figma" 
+                src={figmaEmbedUrl} 
+                className="w-full h-full border-0 absolute inset-0" 
+                allowFullScreen 
+              />
+            ) : (
+              <div className="text-center p-6">
+                <div className="text-slate-400 dark:text-slate-500 font-medium mb-2">Belum ada link Figma Embed</div>
+                <p className="text-sm text-slate-400">Silakan atur link Figma Embed di menu Pengaturan.</p>
+              </div>
+            )}
           </div>
         </Card>
       </section>
