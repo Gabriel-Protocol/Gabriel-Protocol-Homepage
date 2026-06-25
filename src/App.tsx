@@ -3,6 +3,7 @@ import { User } from 'firebase/auth';
 import { auth, loginWithGoogle, logout } from './firebase';
 import { MainTab } from './components/MainTab';
 import { GoalsTab } from './components/GoalsTab';
+import { EvaluationTab } from './components/EvaluationTab';
 import { SettingsTab } from './components/SettingsTab';
 import { 
   LayoutDashboard, 
@@ -12,17 +13,29 @@ import {
   ShieldCheck,
   Menu,
   X,
-  Settings
+  Settings,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from './components/ui/button';
 
-type TabView = 'main' | 'goals' | 'settings';
+type TabView = 'main' | 'goals' | 'evaluation' | 'settings';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState<TabView>('main');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const [selectedMonth, setSelectedMonth] = useState('2026-06');
+  
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    } catch (e) {
+      return 'light';
+    }
+  });
+
   const [figmaShareUrl, setFigmaShareUrl] = useState(() => {
     try {
       return localStorage.getItem('figmaShareUrl') || 'https://www.figma.com/board/lpkNGdGBGM8eRenQZvGDcX/GB---Goals?t=cDi6auQGNZfUHAAV-1';
@@ -39,6 +52,14 @@ export default function App() {
     }
   });
 
+  const [figmaHeight, setFigmaHeight] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem('figmaHeight')) || 450;
+    } catch (e) {
+      return 450;
+    }
+  });
+
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => {
       setUser(u);
@@ -46,6 +67,24 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const updateFigmaHeight = (h: number) => {
+    setFigmaHeight(h);
+    try {
+      localStorage.setItem('figmaHeight', h.toString());
+    } catch {}
+  };
 
   if (loading) {
     return (
@@ -117,6 +156,13 @@ export default function App() {
             Goals
           </button>
           <button
+            onClick={() => setCurrentTab('evaluation')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'evaluation' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            Evaluation
+          </button>
+          <button
             onClick={() => setCurrentTab('settings')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'settings' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
           >
@@ -139,7 +185,7 @@ export default function App() {
             </a>
           </div>
         </div>
-
+ 
         <div className="p-4 border-t border-slate-100 dark:border-slate-800">
            <div className="flex items-center justify-between px-2">
              <div className="flex items-center gap-2 overflow-hidden">
@@ -184,6 +230,13 @@ export default function App() {
               Goals
             </button>
             <button
+              onClick={() => { setCurrentTab('evaluation'); setMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'evaluation' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
+            >
+              <ClipboardList className="h-5 w-5" />
+              Evaluation
+            </button>
+            <button
               onClick={() => { setCurrentTab('settings'); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'settings' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
             >
@@ -195,7 +248,7 @@ export default function App() {
              <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-medium">
                <LogOut className="h-5 w-5" />
                Sign Out
-             </button>
+              </button>
           </div>
         </div>
       )}
@@ -203,17 +256,40 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-h-screen pt-14 md:pt-0">
         {currentTab === 'main' && (
-          <MainTab userId={user.uid} figmaShareUrl={figmaShareUrl} figmaEmbedUrl={figmaEmbedUrl} />
+          <MainTab
+            userId={user.uid}
+            figmaShareUrl={figmaShareUrl}
+            figmaEmbedUrl={figmaEmbedUrl}
+            figmaHeight={figmaHeight}
+            selectedMonth={selectedMonth}
+          />
         )}
         {currentTab === 'goals' && (
-          <GoalsTab userId={user.uid} figmaShareUrl={figmaShareUrl} figmaEmbedUrl={figmaEmbedUrl} />
+          <GoalsTab
+            userId={user.uid}
+            figmaShareUrl={figmaShareUrl}
+            figmaEmbedUrl={figmaEmbedUrl}
+            figmaHeight={figmaHeight}
+          />
+        )}
+        {currentTab === 'evaluation' && (
+          <EvaluationTab
+            userId={user.uid}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+          />
         )}
         {currentTab === 'settings' && (
           <SettingsTab
+            userId={user.uid}
             figmaShareUrl={figmaShareUrl}
             figmaEmbedUrl={figmaEmbedUrl}
             setFigmaShareUrl={(v: string) => { setFigmaShareUrl(v); try { localStorage.setItem('figmaShareUrl', v); } catch {} }}
             setFigmaEmbedUrl={(v: string) => { setFigmaEmbedUrl(v); try { localStorage.setItem('figmaEmbedUrl', v); } catch {} }}
+            figmaHeight={figmaHeight}
+            setFigmaHeight={updateFigmaHeight}
+            theme={theme}
+            setTheme={setTheme}
           />
         )}
       </main>
