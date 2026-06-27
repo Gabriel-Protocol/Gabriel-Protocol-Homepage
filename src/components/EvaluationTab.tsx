@@ -25,24 +25,62 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
   const { data, saveEvaluations } = useEvaluationData(userId, selectedMonth);
   const [activeSubTab, setActiveSubTab] = useState<keyof MonthEvaluation>('productivity');
   
-  const [localPanels, setLocalPanels] = useState<EvaluationPanel[]>([]);
+  const [localData, setLocalData] = useState<MonthEvaluation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Sync state from Firebase when tab or dynamic data changes
+  // Keep references of latest localData and data for unmount auto-saving
+  const localDataRef = React.useRef<MonthEvaluation | null>(null);
+  const dataRef = React.useRef<MonthEvaluation | null>(null);
+
   useEffect(() => {
-    if (data && data[activeSubTab]) {
-      setLocalPanels(data[activeSubTab]);
+    localDataRef.current = localData;
+  }, [localData]);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  // Sync state from Firebase only on initial load or month change
+  useEffect(() => {
+    if (data && !localData) {
+      setLocalData(data);
     }
-  }, [data, activeSubTab]);
+  }, [data, localData]);
+
+  // Reset local state when selected month changes (triggers a fresh load)
+  useEffect(() => {
+    setLocalData(null);
+  }, [selectedMonth]);
+
+  // Auto-save on component unmount (switching main tabs)
+  useEffect(() => {
+    return () => {
+      if (localDataRef.current && dataRef.current) {
+        const hasChanges = JSON.stringify(localDataRef.current) !== JSON.stringify(dataRef.current);
+        if (hasChanges) {
+          saveEvaluations(localDataRef.current).catch(console.error);
+        }
+      }
+    };
+  }, []);
 
   const handlePanelChange = (id: string, field: keyof EvaluationPanel, value: any) => {
-    setLocalPanels((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
+    if (!localData) return;
+    setLocalData((prev) => {
+      if (!prev) return null;
+      const updatedPanels = prev[activeSubTab].map((p) =>
+        p.id === id ? { ...p, [field]: value } : p
+      );
+      return {
+        ...prev,
+        [activeSubTab]: updatedPanels,
+      };
+    });
   };
 
   const handleAddPanel = () => {
+    if (!localData) return;
     const defaultTitles: Record<keyof MonthEvaluation, string> = {
       productivity: 'Evaluasi Produktivitas Baru',
       money: 'Evaluasi Keuangan Baru',
@@ -62,17 +100,31 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
       description: defaultDescs[activeSubTab],
       score: 5
     };
-    setLocalPanels((prev) => [...prev, newPanel]);
+    setLocalData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [activeSubTab]: [...prev[activeSubTab], newPanel],
+      };
+    });
   };
 
   const handleRemovePanel = (id: string) => {
-    setLocalPanels((prev) => prev.filter((p) => p.id !== id));
+    if (!localData) return;
+    setLocalData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [activeSubTab]: prev[activeSubTab].filter((p) => p.id !== id),
+      };
+    });
   };
 
   const handleSaveSubTab = async () => {
+    if (!localData) return;
     setIsSaving(true);
     try {
-      await saveEvaluations(activeSubTab, localPanels);
+      await saveEvaluations(localData);
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 2000);
     } catch (e) {
@@ -80,6 +132,36 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSubTabChange = async (newTab: keyof MonthEvaluation) => {
+    if (localData && data) {
+      // Auto-save if there are unsaved changes in the active subtab
+      const hasChanges = JSON.stringify(localData[activeSubTab]) !== JSON.stringify(data[activeSubTab]);
+      if (hasChanges) {
+        try {
+          await saveEvaluations(localData);
+        } catch (e) {
+          console.error("Auto-save on sub-tab change failed", e);
+        }
+      }
+    }
+    setActiveSubTab(newTab);
+  };
+
+  const handleMonthChange = async (newMonth: string) => {
+    if (localData && data) {
+      // Auto-save if there are any changes before changing month
+      const hasChanges = JSON.stringify(localData) !== JSON.stringify(data);
+      if (hasChanges) {
+        try {
+          await saveEvaluations(localData);
+        } catch (e) {
+          console.error("Auto-save on month change failed", e);
+        }
+      }
+    }
+    setSelectedMonth(newMonth);
   };
 
   const tabConfigs: {
@@ -144,7 +226,7 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
           <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bulan:</label>
           <select
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
+            onChange={(e) => handleMonthChange(e.target.value)}
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600 text-slate-700 dark:text-slate-200"
           >
             {MONTHS_LIST.map((m) => (
@@ -164,7 +246,7 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
             <button
               key={tab.key}
               onClick={() => {
-                setActiveSubTab(tab.key);
+                handleSubTabChange(tab.key);
                 setIsSuccess(false);
               }}
               className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold border transition-all ${
@@ -241,8 +323,16 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
 
         {/* List of custom evaluation panels inside active sub-tab */}
         <div className="space-y-6">
-          {localPanels && localPanels.length > 0 ? (
-            localPanels.map((panel, idx) => (
+          {!localData ? (
+            <div className="text-center py-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center">
+              <svg className="animate-spin h-8 w-8 text-teal-600 mb-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <div className="text-slate-500 font-medium text-sm">Memuat data evaluasi...</div>
+            </div>
+          ) : localData[activeSubTab] && localData[activeSubTab].length > 0 ? (
+            localData[activeSubTab].map((panel, idx) => (
               <Card key={panel.id} className="border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow relative overflow-hidden">
                 
                 {/* Decorative Indicator line */}

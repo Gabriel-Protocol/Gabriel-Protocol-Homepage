@@ -480,15 +480,8 @@ export function useEvaluationData(userId: string | undefined, monthYearKey: stri
     return () => unsub();
   }, [userId, monthYearKey]);
 
-  const saveEvaluations = async (panelKey: keyof MonthEvaluation, panels: EvaluationPanel[]) => {
+  const saveEvaluations = async (updatedData: MonthEvaluation) => {
     if (!userId || !monthYearKey) return;
-    const currentData = data || {
-      productivity: [],
-      money: [],
-      habits: [],
-      goals: []
-    };
-    const updatedData = { ...currentData, [panelKey]: panels };
 
     if (userId === 'demo-user-id') {
       try {
