@@ -68,15 +68,7 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      // --- New Subcollections for Self-Evaluation Web ---
-      match /productivity/{docId} {
-        allow read, write: if isOwner(userId);
-      }
-
-      match /money/{docId} {
-        allow read, write: if isOwner(userId);
-      }
-
+      // Self-Evaluation Web
       match /evaluations/{docId} {
         allow read, write: if isOwner(userId);
       }

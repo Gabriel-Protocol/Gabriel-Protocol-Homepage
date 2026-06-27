@@ -126,41 +126,69 @@ export function useProductivityData(userId: string | undefined, monthYearKey: st
       return;
     }
 
-    const docRefThis = doc(db, 'users', userId, 'productivity', monthYearKey);
-    const docRefPrev = doc(db, 'users', userId, 'productivity', prevKey);
-    
-    let thisData = getDefaultProductivity(monthYearKey);
-    let prevData = getDefaultProductivity(prevKey);
+    let thresholds = { veryBad: 2, bad: 4, fair: 6 };
+    let latestDaysSnap: any = null;
 
-    const unsubThis = onSnapshot(docRefThis, (snap) => {
-      if (snap.exists()) {
-        thisData = { ...getDefaultProductivity(monthYearKey), ...snap.data() };
-      } else {
-        thisData = getDefaultProductivity(monthYearKey);
+    const calculateData = () => {
+      if (!latestDaysSnap) return;
+      
+      const calcForMonth = (key: string): ProductivityData => {
+        const days = latestDaysSnap.docs.filter((d: any) => d.id.startsWith(key));
+        const filled = days.length;
+        if (filled === 0) return { totalHoursMonth: 0, avgHoursDay: 0, daysFilled: 0, indicatorSpread: 'Bagus', bagusDays: 0, cukupDays: 0, jelekDays: 0, sangatJelekDays: 0 };
+        let total = 0;
+        let b = 0, c = 0, j = 0, sj = 0;
+        days.forEach((d: any) => {
+          const h = d.data().hours || 0;
+          total += h;
+          if (h <= thresholds.veryBad) sj++;
+          else if (h <= thresholds.bad) j++;
+          else if (h <= thresholds.fair) c++;
+          else b++;
+        });
+        return {
+          totalHoursMonth: Number(total.toFixed(1)),
+          avgHoursDay: Number((total / filled).toFixed(1)),
+          daysFilled: filled,
+          indicatorSpread: b >= c && b >= j && b >= sj ? 'Bagus' : (c >= j && c >= sj ? 'Cukup' : (j >= sj ? 'Jelek' : 'Sangat Jelek')),
+          bagusDays: b,
+          cukupDays: c,
+          jelekDays: j,
+          sangatJelekDays: sj
+        };
+      };
+      
+      setData({
+        thisMonth: calcForMonth(monthYearKey),
+        lastMonth: calcForMonth(prevKey)
+      });
+    };
+
+    const unsubConfig = onSnapshot(collection(db, 'users', userId, 'config'), (snap) => {
+      if (!snap.empty) {
+        const d = snap.docs[0].data();
+        thresholds = { 
+           veryBad: typeof d.thresholdVeryBad === 'number' ? d.thresholdVeryBad : 2, 
+           bad: typeof d.thresholdBad === 'number' ? d.thresholdBad : 4, 
+           fair: typeof d.thresholdFair === 'number' ? d.thresholdFair : 6 
+        };
+        calculateData();
       }
-      setData({ thisMonth: thisData, lastMonth: prevData });
-    }, (error) => {
-      console.error("Firestore permission error:", error);
-      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
-      setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
-    const unsubPrev = onSnapshot(docRefPrev, (snap) => {
-      if (snap.exists()) {
-        prevData = { ...getDefaultProductivity(prevKey), ...snap.data() };
-      } else {
-        prevData = getDefaultProductivity(prevKey);
-      }
-      setData({ thisMonth: thisData, lastMonth: prevData });
+    const unsubDays = onSnapshot(collection(db, 'users', userId, 'days'), (snap) => {
+      latestDaysSnap = snap;
+      calculateData();
     }, (error) => {
       console.error("Firestore permission error:", error);
       window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
-      setData({ thisMonth: thisData, lastMonth: prevData });
+      const emptyProd = { totalHoursMonth: 0, avgHoursDay: 0, daysFilled: 0, indicatorSpread: 'Bagus', bagusDays: 0, cukupDays: 0, jelekDays: 0, sangatJelekDays: 0 };
+      setData({ thisMonth: emptyProd, lastMonth: emptyProd });
     });
 
     return () => {
-      unsubThis();
-      unsubPrev();
+      unsubConfig();
+      unsubDays();
     };
   }, [userId, monthYearKey]);
 
@@ -216,41 +244,79 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
       return;
     }
 
-    const docRefThis = doc(db, 'users', userId, 'money', monthYearKey);
-    const docRefPrev = doc(db, 'users', userId, 'money', prevKey);
-    
-    let thisData = getDefaultMoney(monthYearKey);
-    let prevData = getDefaultMoney(prevKey);
+    let limitBulanan = 800000;
+    let latestDataSnap: any = null;
 
-    const unsubThis = onSnapshot(docRefThis, (snap) => {
-      if (snap.exists()) {
-        thisData = { ...getDefaultMoney(monthYearKey), ...snap.data() };
-      } else {
-        thisData = getDefaultMoney(monthYearKey);
+    const calculateData = () => {
+      if (!latestDataSnap) return;
+
+      const calcForMonth = (key: string): MoneyData => {
+        const items = latestDataSnap.docs.filter((d: any) => {
+           const val = d.data();
+           const dateStr = val.date || val.tanggal || d.id;
+           return dateStr.startsWith(key);
+        });
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+        let dates = new Set<string>();
+
+        items.forEach((d: any) => {
+          const val = d.data();
+          const amount = Number(val.amount || val.nominal || val.jumlah || 0);
+          const type = (val.type || val.jenis || '').toLowerCase();
+          
+          if (type === 'income' || type === 'pemasukan' || type === 'in') {
+            totalIncome += amount;
+          } else if (type === 'expense' || type === 'pengeluaran' || type === 'out') {
+            totalExpense += amount;
+          }
+          
+          const dateStr = val.date || val.tanggal || d.id.slice(0, 10);
+          if (dateStr) dates.add(dateStr);
+        });
+
+        const daysFilled = dates.size || 1; // avoid div by 0
+        
+        return {
+          netBalance: totalIncome - totalExpense,
+          totalExpense: totalExpense,
+          avgExpenseDay: totalExpense / daysFilled,
+          remainingMonthlyLimit: limitBulanan - totalExpense
+        };
+      };
+
+      setData({
+        thisMonth: calcForMonth(monthYearKey),
+        lastMonth: calcForMonth(prevKey)
+      });
+    };
+
+    const unsubConfig = onSnapshot(collection(db, 'users', userId, 'config'), (snap) => {
+      if (!snap.empty) {
+        const d = snap.docs[0].data();
+        if (typeof d.limitBulanan === 'number') {
+           limitBulanan = d.limitBulanan;
+        } else if (typeof d.monthlyLimit === 'number') {
+           limitBulanan = d.monthlyLimit;
+        }
+        calculateData();
       }
-      setData({ thisMonth: thisData, lastMonth: prevData });
-    }, (error) => {
-      console.error("Firestore permission error:", error);
-      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
-      setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
-    const unsubPrev = onSnapshot(docRefPrev, (snap) => {
-      if (snap.exists()) {
-        prevData = { ...getDefaultMoney(prevKey), ...snap.data() };
-      } else {
-        prevData = getDefaultMoney(prevKey);
-      }
-      setData({ thisMonth: thisData, lastMonth: prevData });
+    const unsubData = onSnapshot(collection(db, 'users', userId, 'data'), (snap) => {
+      latestDataSnap = snap;
+      calculateData();
     }, (error) => {
       console.error("Firestore permission error:", error);
       window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
-      setData({ thisMonth: thisData, lastMonth: prevData });
+      const emptyMoney = { netBalance: 0, totalExpense: 0, avgExpenseDay: 0, remainingMonthlyLimit: limitBulanan };
+      setData({ thisMonth: emptyMoney, lastMonth: emptyMoney });
     });
 
     return () => {
-      unsubThis();
-      unsubPrev();
+      unsubConfig();
+      unsubData();
     };
   }, [userId, monthYearKey]);
 
