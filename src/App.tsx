@@ -65,6 +65,22 @@ export default function App() {
   });
 
   const [authError, setAuthError] = useState<string | null>(null);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleFirestoreError = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.includes('permission-denied')) {
+        setFirestoreError("Izin Firebase Ditolak. Pastikan Rules di Firebase Console sudah di-set ke: allow read, write: if request.auth != null && request.auth.uid == userId;");
+      } else {
+        setFirestoreError(customEvent.detail);
+      }
+      setTimeout(() => setFirestoreError(null), 10000);
+    };
+    
+    window.addEventListener('firestore-error', handleFirestoreError);
+    return () => window.removeEventListener('firestore-error', handleFirestoreError);
+  }, []);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((u) => {
@@ -425,6 +441,24 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Global Firestore Error Toast */}
+      {firestoreError && (
+        <div className="fixed bottom-4 right-4 max-w-sm w-full bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-900 rounded-xl shadow-lg p-4 z-50 animate-in slide-in-from-bottom-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400">Firebase Error</h4>
+              <p className="text-xs text-rose-600 dark:text-rose-300 mt-1">{firestoreError}</p>
+            </div>
+            <button 
+              onClick={() => setFirestoreError(null)}
+              className="text-rose-400 hover:text-rose-600 dark:hover:text-rose-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

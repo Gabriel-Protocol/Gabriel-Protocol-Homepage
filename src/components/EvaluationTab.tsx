@@ -29,9 +29,10 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Keep references of latest localData and data for unmount auto-saving
+  // Keep references of latest localData, data, and saveEvaluations for unmount auto-saving
   const localDataRef = React.useRef<MonthEvaluation | null>(null);
   const dataRef = React.useRef<MonthEvaluation | null>(null);
+  const saveEvaluationsRef = React.useRef(saveEvaluations);
 
   useEffect(() => {
     localDataRef.current = localData;
@@ -40,6 +41,10 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
+
+  useEffect(() => {
+    saveEvaluationsRef.current = saveEvaluations;
+  }, [saveEvaluations]);
 
   // Sync state from Firebase only on initial load or month change
   useEffect(() => {
@@ -59,7 +64,7 @@ export function EvaluationTab({ userId, selectedMonth, setSelectedMonth }: Evalu
       if (localDataRef.current && dataRef.current) {
         const hasChanges = JSON.stringify(localDataRef.current) !== JSON.stringify(dataRef.current);
         if (hasChanges) {
-          saveEvaluations(localDataRef.current).catch(console.error);
+          saveEvaluationsRef.current(localDataRef.current).catch(console.error);
         }
       }
     };

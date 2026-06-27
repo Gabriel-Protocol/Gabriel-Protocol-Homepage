@@ -172,12 +172,15 @@ export function MainTab({
               <span className="w-2.5 h-6 bg-teal-600 rounded-full inline-block"></span>
               GB - Productivity
             </h3>
-            <Button variant="ghost" size="sm" asChild>
-              <a href="/GB-Productivity" target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Buka Aplikasi
-              </a>
-            </Button>
+            <a 
+              href="/GB-Productivity" 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50 h-9 px-3 text-slate-700 dark:text-slate-300"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Buka Aplikasi
+            </a>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
@@ -277,12 +280,15 @@ export function MainTab({
               <span className="w-2.5 h-6 bg-rose-900 rounded-full inline-block"></span>
               GB - Money Management
             </h3>
-            <Button variant="ghost" size="sm" asChild>
-              <a href="/GB-MoneyManagement" target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Buka Aplikasi
-              </a>
-            </Button>
+            <a 
+              href="/GB-MoneyManagement" 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50 h-9 px-3 text-slate-700 dark:text-slate-300"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Buka Aplikasi
+            </a>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
@@ -463,12 +469,15 @@ export function MainTab({
             Mission Mindmap
           </h3>
           {figmaShareUrl && (
-            <Button variant="ghost" size="sm" asChild>
-              <a href={figmaShareUrl} target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Buka di Figma
-              </a>
-            </Button>
+            <a 
+              href={figmaShareUrl} 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:opacity-50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50 h-9 px-3 text-slate-700 dark:text-slate-300"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Buka di Figma
+            </a>
           )}
         </div>
 

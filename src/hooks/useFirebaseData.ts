@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Types
@@ -139,6 +139,10 @@ export function useProductivityData(userId: string | undefined, monthYearKey: st
         thisData = getDefaultProductivity(monthYearKey);
       }
       setData({ thisMonth: thisData, lastMonth: prevData });
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
+      setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
     const unsubPrev = onSnapshot(docRefPrev, (snap) => {
@@ -147,6 +151,10 @@ export function useProductivityData(userId: string | undefined, monthYearKey: st
       } else {
         prevData = getDefaultProductivity(prevKey);
       }
+      setData({ thisMonth: thisData, lastMonth: prevData });
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
       setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
@@ -221,6 +229,10 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
         thisData = getDefaultMoney(monthYearKey);
       }
       setData({ thisMonth: thisData, lastMonth: prevData });
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
+      setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
     const unsubPrev = onSnapshot(docRefPrev, (snap) => {
@@ -229,6 +241,10 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
       } else {
         prevData = getDefaultMoney(prevKey);
       }
+      setData({ thisMonth: thisData, lastMonth: prevData });
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
       setData({ thisMonth: thisData, lastMonth: prevData });
     });
 
@@ -274,6 +290,10 @@ export function useGoalsData(userId: string | undefined) {
       } else {
         setData({ yearlyResolutions: [], monthlyGoals: [], weeklyGoals: [] });
       }
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
+      setData({ yearlyResolutions: [], monthlyGoals: [], weeklyGoals: [] });
     });
     return () => unsub();
   }, [userId]);
@@ -437,29 +457,30 @@ export function useEvaluationData(userId: string | undefined, monthYearKey: stri
       return;
     }
 
-    const unsub = onSnapshot(doc(db, 'users', userId, 'evaluations', monthYearKey), (docSnap) => {
-      // Helper to normalize old database objects or arrays into consistent array format
-      const normalize = (val: any, defaultTitle: string, defaultDesc: string, defaultScore: number): EvaluationPanel[] => {
-        if (!val) {
-          return [{ id: '1', title: defaultTitle, description: defaultDesc, score: defaultScore }];
-        }
-        if (Array.isArray(val)) {
-          return val.map((item, index) => ({
-            id: item.id || String(index + 1),
-            title: item.title ?? '',
-            description: item.description ?? '',
-            score: typeof item.score === 'number' ? item.score : 5
-          }));
-        }
-        // It's a single object (legacy format)
-        return [{
-          id: '1',
-          title: val.title ?? defaultTitle,
-          description: val.description ?? defaultDesc,
-          score: typeof val.score === 'number' ? val.score : defaultScore
-        }];
-      };
+    const docRef = doc(db, 'users', userId, 'evaluations', monthYearKey);
 
+    const normalize = (val: any, defaultTitle: string, defaultDesc: string, defaultScore: number): EvaluationPanel[] => {
+      if (!val) {
+        return [{ id: '1', title: defaultTitle, description: defaultDesc, score: defaultScore }];
+      }
+      if (Array.isArray(val)) {
+        return val.map((item, index) => ({
+          id: item.id || String(index + 1),
+          title: item.title ?? '',
+          description: item.description ?? '',
+          score: typeof item.score === 'number' ? item.score : 5
+        }));
+      }
+      // It's a single object (legacy format)
+      return [{
+        id: '1',
+        title: val.title ?? defaultTitle,
+        description: val.description ?? defaultDesc,
+        score: typeof val.score === 'number' ? val.score : defaultScore
+      }];
+    };
+
+    const unsub = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const docData = docSnap.data();
         setData({
@@ -470,13 +491,23 @@ export function useEvaluationData(userId: string | undefined, monthYearKey: stri
         });
       } else {
         setData({
-          productivity: [{ id: '1', title: 'Evaluasi Produktivitas', description: 'Evaluasi pencapaian kerja dan alokasi waktu bulan ini.', score: 8 }],
-          money: [{ id: '1', title: 'Evaluasi Keuangan', description: 'Analisis rasio tabungan, pengeluaran impulsif, dan kepatuhan budget.', score: 7 }],
-          habits: [{ id: '1', title: 'Evaluasi Kebiasaan (Habits)', description: 'Tingkat konsistensi rutinitas harian dan kedisiplinan diri.', score: 9 }],
-          goals: [{ id: '1', title: 'Evaluasi Resolusi & Goals', description: 'Progress capaian target mingguan dan bulanan.', score: 6 }]
+          productivity: [],
+          money: [],
+          habits: [],
+          goals: []
         });
       }
+    }, (error) => {
+      console.error("Firestore permission error:", error);
+      window.dispatchEvent(new CustomEvent('firestore-error', { detail: error.message }));
+      setData({
+        productivity: [],
+        money: [],
+        habits: [],
+        goals: []
+      });
     });
+
     return () => unsub();
   }, [userId, monthYearKey]);
 
@@ -491,7 +522,8 @@ export function useEvaluationData(userId: string | undefined, monthYearKey: stri
       return;
     }
 
-    await setDoc(doc(db, 'users', userId, 'evaluations', monthYearKey), updatedData, { merge: true });
+    const docRef = doc(db, 'users', userId, 'evaluations', monthYearKey);
+    await setDoc(docRef, updatedData, { merge: true });
   };
 
   return { data, saveEvaluations };
