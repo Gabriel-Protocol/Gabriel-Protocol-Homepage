@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Goal, useGoalsData } from '../hooks/useFirebaseData';
-import { Target, Flag, CalendarDays, Plus, Trash2, CheckCircle2, Circle, ExternalLink } from 'lucide-react';
+import { Target, Flag, CalendarDays, Plus, Trash2, CheckCircle2, Circle, ExternalLink, Info } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface GoalsTabProps {
@@ -149,25 +149,32 @@ export function GoalsTab({ userId, figmaShareUrl, figmaEmbedUrl, figmaHeight }: 
             </Button>
           )}
         </div>
-        <Card className="overflow-hidden border border-slate-100 dark:border-slate-800">
+        <Card className="overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col">
           <div 
             style={{ height: `${figmaHeight}px` }} 
-            className="w-full bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center relative min-h-[300px]"
+            className="w-full bg-slate-100 dark:bg-slate-800/50 relative min-h-[350px]"
           >
             {figmaEmbedUrl ? (
               <iframe 
                 title="Mindmap Figma" 
                 src={figmaEmbedUrl} 
-                className="w-full h-full border-0 absolute inset-0" 
+                className="w-full h-full border-0 absolute inset-0 pointer-events-auto" 
                 allowFullScreen 
               />
             ) : (
-              <div className="text-center p-6">
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <div className="text-slate-400 dark:text-slate-500 font-medium mb-2">Belum ada link Figma Embed</div>
-                <p className="text-sm text-slate-400">Silakan atur link Figma Embed di menu Pengaturan.</p>
+                <p className="text-sm text-slate-400">Silakan atur link Figma Embed di menu Setting.</p>
               </div>
             )}
           </div>
+          
+          {figmaEmbedUrl && (
+            <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Info className="h-4 w-4 text-teal-600 shrink-0" />
+              <span>Gunakan <strong>Scroll Mouse</strong> untuk menggerakkan layar mindmap. Untuk melakukan zoom, gunakan pintasan keyboard <strong>Scroll Mouse</strong> (tanpa CTRL pada Figma embed, atau CTRL + Scroll jika dikendalikan browser).</span>
+            </div>
+          )}
         </Card>
       </section>
 

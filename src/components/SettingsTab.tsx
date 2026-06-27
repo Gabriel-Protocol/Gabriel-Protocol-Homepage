@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { useGoalsData } from '../hooks/useFirebaseData';
-import { Target, CalendarDays, Flag, LayoutGrid, Sun, Moon, Sparkles, Check, Trash2, Plus } from 'lucide-react';
+import { LayoutGrid, Sun, Moon, Sparkles, Check } from 'lucide-react';
 
 interface SettingsTabProps {
   userId: string;
@@ -30,17 +29,6 @@ export function SettingsTab({
   const [share, setShare] = useState(figmaShareUrl);
   const [embed, setEmbed] = useState(figmaEmbedUrl);
   const [height, setHeight] = useState(figmaHeight);
-  
-  const { 
-    data: goalsData, 
-    addMonthlyGoal, 
-    removeMonthlyGoal, 
-    addWeeklyGoal, 
-    removeWeeklyGoal 
-  } = useGoalsData(userId);
-
-  const [newMonthlyText, setNewMonthlyText] = useState('');
-  const [newWeeklyText, setNewWeeklyText] = useState('');
 
   useEffect(() => setShare(figmaShareUrl), [figmaShareUrl]);
   useEffect(() => setEmbed(figmaEmbedUrl), [figmaEmbedUrl]);
@@ -52,31 +40,15 @@ export function SettingsTab({
     setFigmaHeight(height);
   };
 
-  const handleAddMonthly = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMonthlyText.trim()) {
-      await addMonthlyGoal(newMonthlyText.trim());
-      setNewMonthlyText('');
-    }
-  };
-
-  const handleAddWeekly = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newWeeklyText.trim()) {
-      await addWeeklyGoal(newWeeklyText.trim());
-      setNewWeeklyText('');
-    }
-  };
-
   return (
     <div className="flex-1 p-6 md:p-10 max-w-4xl mx-auto w-full space-y-8">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-50 mb-1">Pengaturan</h2>
-        <p className="text-slate-500 mb-6">Konfigurasi tampilan, tema, ukuran mindmap, serta kelola tujuan bulanan dan mingguan Anda.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-50 mb-1">Setting</h2>
+        <p className="text-slate-500 mb-6 text-sm">Konfigurasi tampilan, tema, serta ukuran mindmap Anda.</p>
       </div>
 
       {/* Theme Selection */}
-      <Card className="overflow-hidden border border-slate-100 dark:border-slate-800">
+      <Card className="overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
         <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
           <CardTitle className="text-base flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-teal-600" />
@@ -127,7 +99,7 @@ export function SettingsTab({
       </Card>
 
       {/* Figma Sizing & Links */}
-      <Card className="border border-slate-100 dark:border-slate-800">
+      <Card className="border border-slate-100 dark:border-slate-800 shadow-sm">
         <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-teal-600" />
@@ -189,94 +161,6 @@ export function SettingsTab({
         </CardContent>
       </Card>
 
-      {/* Manual Goals Editor (Bulanan & Mingguan) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Monthly Goals manual manager */}
-        <Card className="border border-slate-100 dark:border-slate-800 flex flex-col">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-teal-600" />
-              Kelola Tujuan Bulanan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 flex-1 flex flex-col">
-            <form onSubmit={handleAddMonthly} className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newMonthlyText}
-                onChange={(e) => setNewMonthlyText(e.target.value)}
-                placeholder="Tambah tujuan bulanan..."
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 text-slate-800 dark:text-slate-100"
-              />
-              <Button size="icon" type="submit" disabled={!newMonthlyText.trim()}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </form>
-
-            <ul className="space-y-2 flex-1 max-h-[250px] overflow-y-auto pr-1">
-              {goalsData?.monthlyGoals && goalsData.monthlyGoals.length > 0 ? (
-                goalsData.monthlyGoals.map((goal) => (
-                  <li key={goal.id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                    <span className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2">{goal.text}</span>
-                    <button
-                      onClick={() => removeMonthlyGoal(goal.id)}
-                      className="text-rose-400 hover:text-rose-600 transition-colors p-1"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <div className="text-xs text-slate-400 italic text-center py-6">Belum ada tujuan bulanan.</div>
-              )}
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Weekly Goals manual manager */}
-        <Card className="border border-slate-100 dark:border-slate-800 flex flex-col">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Flag className="h-4 w-4 text-teal-600" />
-              Kelola Tujuan Mingguan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 flex-1 flex flex-col">
-            <form onSubmit={handleAddWeekly} className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newWeeklyText}
-                onChange={(e) => setNewWeeklyText(e.target.value)}
-                placeholder="Tambah tujuan mingguan..."
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 text-slate-800 dark:text-slate-100"
-              />
-              <Button size="icon" type="submit" disabled={!newWeeklyText.trim()}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </form>
-
-            <ul className="space-y-2 flex-1 max-h-[250px] overflow-y-auto pr-1">
-              {goalsData?.weeklyGoals && goalsData.weeklyGoals.length > 0 ? (
-                goalsData.weeklyGoals.map((goal) => (
-                  <li key={goal.id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                    <span className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2">{goal.text}</span>
-                    <button
-                      onClick={() => removeWeeklyGoal(goal.id)}
-                      className="text-rose-400 hover:text-rose-600 transition-colors p-1"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <div className="text-xs text-slate-400 italic text-center py-6">Belum ada tujuan mingguan.</div>
-              )}
-            </ul>
-          </CardContent>
-        </Card>
-
-      </div>
     </div>
   );
 }
