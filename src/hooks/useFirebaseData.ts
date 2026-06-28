@@ -251,29 +251,135 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
       if (!latestDataSnap) return;
 
       const calcForMonth = (key: string): MoneyData => {
-        const items = latestDataSnap.docs.filter((d: any) => {
-           const val = d.data();
-           const dateStr = val.date || val.tanggal || d.id;
-           return dateStr.startsWith(key);
-        });
-
         let totalIncome = 0;
         let totalExpense = 0;
         let dates = new Set<string>();
 
-        items.forEach((d: any) => {
-          const val = d.data();
-          const amount = Number(val.amount || val.nominal || val.jumlah || 0);
-          const type = (val.type || val.jenis || '').toLowerCase();
-          
-          if (type === 'income' || type === 'pemasukan' || type === 'in') {
-            totalIncome += amount;
-          } else if (type === 'expense' || type === 'pengeluaran' || type === 'out') {
-            totalExpense += amount;
-          }
-          
-          const dateStr = val.date || val.tanggal || d.id.slice(0, 10);
-          if (dateStr) dates.add(dateStr);
+        latestDataSnap.docs.forEach((d: any) => {
+           const val = d.data();
+           
+           let year = 0;
+           let month = 0;
+           let dateStr = "";
+
+           const rawDate = val.date || val.tanggal || val.createdAt || val.timestamp || val.waktu || val.created_at || val.time;
+           if (rawDate) {
+              if (typeof rawDate === 'string') {
+                 dateStr = rawDate;
+              } else if (typeof rawDate === 'number') {
+                 const dt = new Date(rawDate);
+                 if (!isNaN(dt.getTime())) {
+                     year = dt.getFullYear();
+                     month = dt.getMonth() + 1;
+                 }
+              } else if (rawDate.toDate && typeof rawDate.toDate === 'function') {
+                 const dt = rawDate.toDate();
+                 year = dt.getFullYear();
+                 month = dt.getMonth() + 1;
+              } else if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+                 year = rawDate.getFullYear();
+                 month = rawDate.getMonth() + 1;
+              }
+           } else if (val.year && val.month) {
+              year = Number(val.year);
+              month = Number(val.month);
+              dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.day || 1).padStart(2, '0')}`;
+           } else if (val.tahun && val.bulan) {
+              year = Number(val.tahun);
+              month = Number(val.bulan);
+              dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.hari || val.day || 1).padStart(2, '0')}`;
+           }
+           
+           if (!year || !month) {
+             if (!dateStr) dateStr = String(d.id);
+             
+             // Check for YYYY-MM-DD or DD-MM-YYYY with various separators (-, /, .)
+             const yyyyMmDdMatch = dateStr.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
+             const ddMmYyyyMatch = dateStr.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
+             
+             if (yyyyMmDdMatch) {
+                year = parseInt(yyyyMmDdMatch[1], 10);
+                month = parseInt(yyyyMmDdMatch[2], 10);
+             } else if (ddMmYyyyMatch) {
+                year = parseInt(ddMmYyyyMatch[3], 10);
+                month = parseInt(ddMmYyyyMatch[2], 10);
+             } else if (/^\d+$/.test(dateStr)) {
+                 const dt = new Date(parseInt(dateStr, 10));
+                 if (!isNaN(dt.getTime())) {
+                   year = dt.getFullYear();
+                   month = dt.getMonth() + 1;
+                 }
+             } else {
+                 const parsedDate = new Date(dateStr);
+                 if (!isNaN(parsedDate.getTime())) {
+                   year = parsedDate.getFullYear();
+                   month = parsedDate.getMonth() + 1;
+                 }
+             }
+           }
+
+           const [keyYearStr, keyMonthStr] = key.split('-');
+           const keyYear = parseInt(keyYearStr, 10);
+           const keyMonth = parseInt(keyMonthStr, 10);
+           
+           let isMatch = false;
+           if (year && month) {
+             isMatch = (year === keyYear && month === keyMonth);
+           } else {
+             // Fallback string match
+             isMatch = dateStr.includes(key) || dateStr.includes(`${keyMonthStr}-${keyYearStr}`) || dateStr.includes(`${keyYearStr}${keyMonthStr}`);
+           }
+
+           if (!isMatch) return;
+
+           const parseAmount = (v: any) => {
+              if (typeof v === 'number') return v;
+              if (typeof v === 'string') {
+                  // For Indonesian Rupiah, we usually don't have decimals. 
+                  // "Rp 3.600.000,00" -> remove ",00" first, then extract digits
+                  let cleaned = v.split(',')[0].replace(/[^0-9]/g, '');
+                  return Number(cleaned) || 0;
+              }
+              return 0;
+           };
+
+           let amount = parseAmount(val.amount) || parseAmount(val.nominal) || parseAmount(val.jumlah) || parseAmount(val.value) || parseAmount(val.total) || parseAmount(val.harga);
+           const typeStr = String(val.type || val.tipe || val.jenis || val.kategori || val.status || '').toLowerCase().trim();
+           
+           if (val.pemasukan !== undefined && val.pemasukan !== null) {
+              totalIncome += parseAmount(val.pemasukan);
+           } else if (val.pengeluaran !== undefined && val.pengeluaran !== null) {
+              totalExpense += parseAmount(val.pengeluaran);
+           } else if (val.income !== undefined && val.income !== null) {
+              totalIncome += parseAmount(val.income);
+           } else if (val.expense !== undefined && val.expense !== null) {
+              totalExpense += parseAmount(val.expense);
+           } else if (val.isIncome === true || val.isPemasukan === true) {
+              totalIncome += amount;
+           } else if (val.isExpense === true || val.isPengeluaran === true) {
+              totalExpense += amount;
+           } else {
+               if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
+                 totalIncome += amount;
+               } else if (['expense', 'pengeluaran', 'out', 'keluar'].includes(typeStr) || typeStr === '') {
+                 // Default to expense if empty/unrecognized
+                 totalExpense += amount;
+               }
+           }
+           
+           // For unique dates count
+           let dateKey = dateStr;
+           if (year && month) {
+              const dt = new Date(year, month - 1, val.day || 1); // rough fallback
+              // If rawDate was parsed, try to get actual date
+              if (rawDate && (typeof rawDate === 'number' || rawDate.toDate || rawDate instanceof Date)) {
+                let actualDt = rawDate instanceof Date ? rawDate : (rawDate.toDate ? rawDate.toDate() : new Date(rawDate));
+                dateKey = `${actualDt.getFullYear()}-${actualDt.getMonth()+1}-${actualDt.getDate()}`;
+              } else if (dateStr) {
+                dateKey = dateStr.slice(0, 10);
+              }
+           }
+           dates.add(dateKey);
         });
 
         const daysFilled = dates.size || 1; // avoid div by 0
