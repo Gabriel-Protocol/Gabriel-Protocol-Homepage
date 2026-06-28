@@ -346,25 +346,37 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
            let amount = parseAmount(val.amount) || parseAmount(val.nominal) || parseAmount(val.jumlah) || parseAmount(val.value) || parseAmount(val.total) || parseAmount(val.harga);
            const typeStr = String(val.type || val.tipe || val.jenis || val.kategori || val.status || '').toLowerCase().trim();
            
-           if (val.pemasukan !== undefined && val.pemasukan !== null) {
+           let isProcessed = false;
+           if (val.pemasukan !== undefined && val.pemasukan !== null && parseAmount(val.pemasukan) > 0) {
               totalIncome += parseAmount(val.pemasukan);
-           } else if (val.pengeluaran !== undefined && val.pengeluaran !== null) {
+              isProcessed = true;
+           }
+           if (val.pengeluaran !== undefined && val.pengeluaran !== null && parseAmount(val.pengeluaran) > 0) {
               totalExpense += parseAmount(val.pengeluaran);
-           } else if (val.income !== undefined && val.income !== null) {
+              isProcessed = true;
+           }
+           if (val.income !== undefined && val.income !== null && parseAmount(val.income) > 0) {
               totalIncome += parseAmount(val.income);
-           } else if (val.expense !== undefined && val.expense !== null) {
+              isProcessed = true;
+           }
+           if (val.expense !== undefined && val.expense !== null && parseAmount(val.expense) > 0) {
               totalExpense += parseAmount(val.expense);
-           } else if (val.isIncome === true || val.isPemasukan === true) {
-              totalIncome += amount;
-           } else if (val.isExpense === true || val.isPengeluaran === true) {
-              totalExpense += amount;
-           } else {
-               if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
+              isProcessed = true;
+           }
+
+           if (!isProcessed) {
+              if (val.isIncome === true || val.isPemasukan === true) {
                  totalIncome += amount;
-               } else if (['expense', 'pengeluaran', 'out', 'keluar'].includes(typeStr) || typeStr === '') {
-                 // Default to expense if empty/unrecognized
+              } else if (val.isExpense === true || val.isPengeluaran === true) {
                  totalExpense += amount;
-               }
+              } else {
+                  if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
+                    totalIncome += amount;
+                  } else if (['expense', 'pengeluaran', 'out', 'keluar'].includes(typeStr) || typeStr === '') {
+                    // Default to expense if empty/unrecognized
+                    totalExpense += amount;
+                  }
+              }
            }
            
            // For unique dates count

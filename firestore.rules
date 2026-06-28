@@ -49,8 +49,7 @@ service cloud.firestore {
       allow create, update: if isOwner(userId) && isValidUserConfig(request.resource.data);
 
       match /config/{configId} {
-        allow read, delete: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidUserConfig(request.resource.data);
+        allow read, write: if isOwner(userId);
       }
 
       match /days/{dateId} {
