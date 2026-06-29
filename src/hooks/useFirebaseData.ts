@@ -244,6 +244,39 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
       return;
     }
 
+    const INDONESIAN_MONTHS_MAP: { [key: string]: number } = {
+      januari: 1, jan: 1, january: 1,
+      februari: 2, feb: 2, february: 2,
+      maret: 3, mar: 3, march: 3,
+      april: 4, apr: 4,
+      mei: 5, may: 5,
+      juni: 6, jun: 6, june: 6,
+      juli: 7, jul: 7, july: 7,
+      agustus: 8, agu: 8, agt: 8, august: 8,
+      september: 9, sep: 9,
+      oktober: 10, okt: 10, october: 10,
+      november: 11, nov: 11,
+      desember: 12, des: 12, december: 12
+    };
+
+    const parseMonthName = (m: any): number => {
+      if (!m) return 0;
+      if (typeof m === 'number') return m;
+      const s = String(m).toLowerCase().trim();
+      const num = parseInt(s, 10);
+      if (!isNaN(num)) return num;
+      return INDONESIAN_MONTHS_MAP[s] || 0;
+    };
+
+    const parseYearName = (y: any): number => {
+      if (!y) return 0;
+      if (typeof y === 'number') return y;
+      const s = String(y).trim();
+      const num = parseInt(s, 10);
+      if (!isNaN(num)) return num;
+      return 0;
+    };
+
     let limitBulanan = 800000;
     let latestDataSnap: any = null;
 
@@ -281,40 +314,60 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
                  month = rawDate.getMonth() + 1;
               }
            } else if (val.year && val.month) {
-              year = Number(val.year);
-              month = Number(val.month);
+              year = parseYearName(val.year);
+              month = parseMonthName(val.month);
               dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.day || 1).padStart(2, '0')}`;
            } else if (val.tahun && val.bulan) {
-              year = Number(val.tahun);
-              month = Number(val.bulan);
+              year = parseYearName(val.tahun);
+              month = parseMonthName(val.bulan);
               dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.hari || val.day || 1).padStart(2, '0')}`;
            }
            
            if (!year || !month) {
              if (!dateStr) dateStr = String(d.id);
              
-             // Check for YYYY-MM-DD or DD-MM-YYYY with various separators (-, /, .)
-             const yyyyMmDdMatch = dateStr.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
-             const ddMmYyyyMatch = dateStr.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
-             
-             if (yyyyMmDdMatch) {
-                year = parseInt(yyyyMmDdMatch[1], 10);
-                month = parseInt(yyyyMmDdMatch[2], 10);
-             } else if (ddMmYyyyMatch) {
-                year = parseInt(ddMmYyyyMatch[3], 10);
-                month = parseInt(ddMmYyyyMatch[2], 10);
-             } else if (/^\d+$/.test(dateStr)) {
-                 const dt = new Date(parseInt(dateStr, 10));
-                 if (!isNaN(dt.getTime())) {
-                   year = dt.getFullYear();
-                   month = dt.getMonth() + 1;
-                 }
+             const cleanDateStr = dateStr.toLowerCase().trim();
+
+             // Check for Indonesian/English month name inside string
+             let foundMonth = 0;
+             for (const [mName, mVal] of Object.entries(INDONESIAN_MONTHS_MAP)) {
+               const regex = new RegExp(`\\b${mName}\\b`);
+               if (regex.test(cleanDateStr)) {
+                 foundMonth = mVal;
+                 break;
+               }
+             }
+
+             if (foundMonth) {
+               month = foundMonth;
+               const yearMatch = cleanDateStr.match(/\b(20\d{2})\b/);
+               if (yearMatch) {
+                 year = parseInt(yearMatch[1], 10);
+               }
              } else {
-                 const parsedDate = new Date(dateStr);
-                 if (!isNaN(parsedDate.getTime())) {
-                   year = parsedDate.getFullYear();
-                   month = parsedDate.getMonth() + 1;
-                 }
+               // Check for YYYY-MM-DD or DD-MM-YYYY with various separators (-, /, .)
+               const yyyyMmDdMatch = cleanDateStr.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
+               const ddMmYyyyMatch = cleanDateStr.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
+               
+               if (yyyyMmDdMatch) {
+                  year = parseInt(yyyyMmDdMatch[1], 10);
+                  month = parseInt(yyyyMmDdMatch[2], 10);
+               } else if (ddMmYyyyMatch) {
+                  year = parseInt(ddMmYyyyMatch[3], 10);
+                  month = parseInt(ddMmYyyyMatch[2], 10);
+               } else if (/^\d+$/.test(cleanDateStr)) {
+                   const dt = new Date(parseInt(cleanDateStr, 10));
+                   if (!isNaN(dt.getTime())) {
+                     year = dt.getFullYear();
+                     month = dt.getMonth() + 1;
+                   }
+               } else {
+                   const parsedDate = new Date(cleanDateStr);
+                   if (!isNaN(parsedDate.getTime())) {
+                     year = parsedDate.getFullYear();
+                     month = parsedDate.getMonth() + 1;
+                   }
+               }
              }
            }
 
@@ -332,17 +385,22 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
 
            if (!isMatch) return;
 
-           const parseAmount = (v: any) => {
-              if (typeof v === 'number') return v;
+           const parseAmount = (v: any): number => {
+              if (typeof v === 'number') return Math.abs(v);
               if (typeof v === 'string') {
-                  // For Indonesian Rupiah, we usually don't have decimals. 
-                  // "Rp 3.600.000,00" -> remove ",00" first, then extract digits
                   let cleaned = v.split(',')[0].replace(/[^0-9]/g, '');
                   return Number(cleaned) || 0;
               }
               return 0;
            };
 
+           const isNegativeValue = (v: any): boolean => {
+              if (typeof v === 'number') return v < 0;
+              if (typeof v === 'string') return v.includes('-');
+              return false;
+           };
+
+           const isNegative = isNegativeValue(val.amount) || isNegativeValue(val.nominal) || isNegativeValue(val.jumlah) || isNegativeValue(val.value) || isNegativeValue(val.total) || isNegativeValue(val.harga);
            let amount = parseAmount(val.amount) || parseAmount(val.nominal) || parseAmount(val.jumlah) || parseAmount(val.value) || parseAmount(val.total) || parseAmount(val.harga);
            const typeStr = String(val.type || val.tipe || val.jenis || val.kategori || val.status || '').toLowerCase().trim();
            
@@ -369,6 +427,8 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
                  totalIncome += amount;
               } else if (val.isExpense === true || val.isPengeluaran === true) {
                  totalExpense += amount;
+              } else if (isNegative) {
+                 totalExpense += amount;
               } else {
                   if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
                     totalIncome += amount;
@@ -383,7 +443,6 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
            let dateKey = dateStr;
            if (year && month) {
               const dt = new Date(year, month - 1, val.day || 1); // rough fallback
-              // If rawDate was parsed, try to get actual date
               if (rawDate && (typeof rawDate === 'number' || rawDate.toDate || rawDate instanceof Date)) {
                 let actualDt = rawDate instanceof Date ? rawDate : (rawDate.toDate ? rawDate.toDate() : new Date(rawDate));
                 dateKey = `${actualDt.getFullYear()}-${actualDt.getMonth()+1}-${actualDt.getDate()}`;
