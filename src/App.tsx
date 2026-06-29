@@ -5,6 +5,7 @@ import { MainTab } from './components/MainTab';
 import { GoalsTab } from './components/GoalsTab';
 import { EvaluationTab } from './components/EvaluationTab';
 import { SettingsTab } from './components/SettingsTab';
+import { GabrielLogo } from './components/GabrielLogo';
 import { 
   LayoutDashboard, 
   Target, 
@@ -275,133 +276,106 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen sticky top-0">
-        <div className="p-6">
-          <div className="flex items-center gap-3 font-semibold text-slate-800 dark:text-slate-50 text-lg tracking-tight">
-            <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-inner">
-               <ShieldCheck className="h-4 w-4" />
+    <div 
+      className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950"
+      style={{ 
+        backgroundImage: 'linear-gradient(to right, rgba(13, 148, 136, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(13, 148, 136, 0.02) 1px, transparent 1px)', 
+        backgroundSize: '24px 24px' 
+      }}
+    >
+      {/* Premium Top Navigation Bar */}
+      <header className="w-full border-b border-slate-200/60 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 md:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
+        {/* Left: Logo + Title + Status Pill */}
+        <div className="flex items-center gap-4">
+          {/* Gabriel Protocol Planet Logo (Gambar 2) */}
+          <div className="flex-shrink-0 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-transform hover:scale-105 duration-300">
+            <GabrielLogo size={62} />
+          </div>
+          
+          <div className="flex flex-col">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50 tracking-tight leading-tight">
+              GB - Money Management
+            </h1>
+            <div className="mt-1 flex items-center">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-teal-50/80 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400 border border-teal-100/60 dark:border-teal-900/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Tersinkron
+              </span>
             </div>
-            Gabriel Protocol
           </div>
         </div>
-        
-        <nav className="flex-1 px-4 space-y-1">
-          <button
-            onClick={() => setCurrentTab('main')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'main' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            Main Dashboard
-          </button>
-          <button
-            onClick={() => setCurrentTab('goals')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'goals' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
-          >
-            <Target className="h-4 w-4" />
-            Goals
-          </button>
-          <button
-            onClick={() => setCurrentTab('evaluation')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'evaluation' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
-          >
-            <ClipboardList className="h-4 w-4" />
-            Evaluation
-          </button>
-          <button
-            onClick={() => setCurrentTab('settings')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentTab === 'settings' ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'}`}
-          >
-            <Settings className="h-4 w-4" />
-            Setting
-          </button>
-        </nav>
-        
-        {/* Apps Links */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">Connected Apps</div>
-          <div className="space-y-1">
-            <a href="/GB-Productivity" className="flex items-center justify-between px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
-              <span>Productivity</span>
-              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
-            </a>
-            <a href="/GB-MoneyManagement" className="flex items-center justify-between px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
-              <span>Money Management</span>
-              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
-            </a>
-          </div>
-        </div>
- 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-           <div className="flex items-center justify-between px-2">
-             <div className="flex items-center gap-2 overflow-hidden">
-               <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`} className="w-8 h-8 rounded-full border border-slate-200" alt="avatar" />
-               <div className="flex flex-col items-start truncate">
-                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate w-full">{user.displayName || "Agent"}</span>
-               </div>
-             </div>
-             <button onClick={logout} className="p-2 text-slate-400 hover:text-rose-900 dark:hover:text-rose-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Logout">
-                <LogOut className="h-4 w-4" />
-             </button>
-           </div>
-        </div>
-      </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 w-full z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-         <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-50">
-            <ShieldCheck className="h-5 w-5 text-teal-600" />
-            Gabriel Protocol
-         </div>
-         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2">
-           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-         </button>
-      </div>
-
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-white dark:bg-slate-900 pt-16 flex flex-col">
-          <nav className="flex-1 p-4 space-y-2">
+        {/* Right: Tab segmented control + User profile */}
+        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+          {/* Segmented control tab bar (Pill style like Gambar 1) */}
+          <div className="bg-slate-100/85 dark:bg-slate-800/85 p-1 rounded-2xl flex items-center shadow-inner border border-slate-200/10 max-w-full overflow-x-auto scrollbar-none">
             <button
-              onClick={() => { setCurrentTab('main'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'main' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
+              onClick={() => setCurrentTab('main')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                currentTab === 'main'
+                  ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
             >
-              <LayoutDashboard className="h-5 w-5" />
-              Main Dashboard
+              Dashboard
             </button>
             <button
-              onClick={() => { setCurrentTab('goals'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'goals' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
+              onClick={() => setCurrentTab('goals')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                currentTab === 'goals'
+                  ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
             >
-              <Target className="h-5 w-5" />
               Goals
             </button>
             <button
-              onClick={() => { setCurrentTab('evaluation'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'evaluation' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
+              onClick={() => setCurrentTab('evaluation')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                currentTab === 'evaluation'
+                  ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
             >
-              <ClipboardList className="h-5 w-5" />
               Evaluation
             </button>
             <button
-              onClick={() => { setCurrentTab('settings'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium ${currentTab === 'settings' ? 'bg-teal-50 text-teal-700' : 'text-slate-600'}`}
+              onClick={() => setCurrentTab('settings')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                currentTab === 'settings'
+                  ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
             >
-              <Settings className="h-5 w-5" />
-              Setting
+              Pengaturan
             </button>
-          </nav>
-          <div className="p-4 border-t border-slate-100">
-             <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-medium">
-               <LogOut className="h-5 w-5" />
-               Sign Out
-              </button>
+          </div>
+
+          {/* User profile dropdown & logout */}
+          <div className="flex items-center gap-2 pl-3 border-l border-slate-200 dark:border-slate-800 shrink-0">
+            <div className="flex items-center gap-2">
+              <img 
+                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`} 
+                className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" 
+                alt="avatar" 
+              />
+              <span className="hidden lg:inline text-xs font-semibold text-slate-700 dark:text-slate-300 max-w-[100px] truncate">
+                {user.displayName || "User"}
+              </span>
+            </div>
+            <button 
+              onClick={logout} 
+              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" 
+              title="Sign Out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      )}
+      </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-screen pt-14 md:pt-0">
+      <main className="flex-1 flex flex-col w-full max-w-7xl mx-auto px-4 md:px-8 py-6">
         {currentTab === 'main' && (
           <MainTab
             userId={user.uid}
