@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { LayoutGrid, Sun, Moon, Sparkles, Check } from 'lucide-react';
+import { 
+  LayoutGrid, 
+  Sun, 
+  Moon, 
+  Sparkles, 
+  Check, 
+  Database, 
+  RefreshCw, 
+  AlertTriangle, 
+  CheckCircle2 
+} from 'lucide-react';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface SettingsTabProps {
   userId: string;
@@ -30,6 +42,21 @@ export function SettingsTab({
   const [embed, setEmbed] = useState(figmaEmbedUrl);
   const [height, setHeight] = useState(figmaHeight);
 
+  // States for manual Firestore Fetch / Sync
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [syncError, setSyncError] = useState<string>('');
+  const [syncStats, setSyncStats] = useState<{ 
+    configCount: number; 
+    dataCount: number;
+    hasSummary: boolean;
+    summaryData?: {
+      netBalance?: number;
+      totalExpense?: number;
+      avgExpenseDay?: number;
+      remainingMonthlyLimit?: number;
+    } | null;
+  } | null>(null);
+
   useEffect(() => setShare(figmaShareUrl), [figmaShareUrl]);
   useEffect(() => setEmbed(figmaEmbedUrl), [figmaEmbedUrl]);
   useEffect(() => setHeight(figmaHeight), [figmaHeight]);
@@ -38,6 +65,52 @@ export function SettingsTab({
     setFigmaShareUrl(share.trim());
     setFigmaEmbedUrl(embed.trim());
     setFigmaHeight(height);
+  };
+
+  const handleFetchMoneyData = async () => {
+    setSyncStatus('loading');
+    setSyncError('');
+    setSyncStats(null);
+
+    try {
+      if (!userId) {
+        throw new Error("ID Pengguna tidak ditemukan. Silakan masuk terlebih dahulu.");
+      }
+
+      // Fetch config collection
+      const configRef = collection(db, 'users', userId, 'config');
+      const configSnap = await getDocs(configRef);
+
+      // Fetch data collection
+      const dataRef = collection(db, 'users', userId, 'data');
+      const dataSnap = await getDocs(dataRef);
+
+      // Fetch summary/money document
+      const summaryMoneyRef = doc(db, 'users', userId, 'summary', 'money');
+      const summaryMoneySnap = await getDoc(summaryMoneyRef);
+      const hasSummary = summaryMoneySnap.exists();
+      const summaryData = hasSummary ? summaryMoneySnap.data() : null;
+
+      setSyncStats({
+        configCount: configSnap.size,
+        dataCount: dataSnap.size,
+        hasSummary,
+        summaryData: summaryData as any
+      });
+      setSyncStatus('success');
+    } catch (err: any) {
+      console.error("Manual fetch failed:", err);
+      setSyncStatus('error');
+      
+      let friendlyError = err?.message || String(err);
+      if (userId === 'demo-user-id') {
+        friendlyError = "Anda saat ini sedang menggunakan Akun Demo. Firestore menolak permintaan ini karena aturan keamanan membutuhkan login akun Google asli (request.auth != null). Silakan keluar lalu masuk dengan Akun Google untuk mensimulasikan koneksi Firestore yang sesungguhnya.";
+      } else if (friendlyError.includes('permission-denied') || friendlyError.includes('Missing or insufficient permissions')) {
+        friendlyError = "Izin Firebase Ditolak (Permission Denied). Aturan keamanan (Rules) Firestore Anda membatasi akses ini. Pastikan Anda telah mengonfigurasi rules agar mengizinkan akses ke sub-koleksi 'config' dan 'data' di bawah 'users/{userId}'.";
+      }
+      
+      setSyncError(friendlyError);
+    }
   };
 
   return (
@@ -95,6 +168,94 @@ export function SettingsTab({
               {theme === 'dark' && <Check className="h-4 w-4 text-teal-600 shrink-0 mt-1" />}
             </button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* GB - Money Management Sync */}
+      <Card className="border border-slate-100 dark:border-slate-800 shadow-sm">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="h-4 w-4 text-teal-600" />
+            Sinkronisasi GB - Money Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+            Ambil data alokasi anggaran (<code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs">config</code>) 
+            dan transaksi keuangan (<code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs">data</code>) secara manual 
+            dari database Firestore <strong>GB - Money Management</strong> Anda.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+            <Button 
+              onClick={handleFetchMoneyData}
+              disabled={syncStatus === 'loading'}
+              className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-medium"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncStatus === 'loading' ? 'animate-spin' : ''}`} />
+              {syncStatus === 'loading' ? 'Meminta Data...' : 'Minta Data Sekarang'}
+            </Button>
+            
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-sans leading-tight">
+              Pembaruan otomatis tetap berjalan di latar belakang secara real-time.
+            </span>
+          </div>
+
+          {/* Success Panel */}
+          {syncStatus === 'success' && syncStats && (
+            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300 text-sm flex gap-3 items-start animate-in fade-in duration-200">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold">Sinkronisasi Berhasil!</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400/80 mt-1">
+                  Koneksi ke Firestore aktif. Ditemukan <strong>{syncStats.configCount} data konfigurasi</strong> (limit bulanan), <strong>{syncStats.dataCount} rekaman transaksi</strong>{syncStats.hasSummary ? ', dan dokumen ringkasan (summary/money) yang utuh' : ''}. Data ini telah berhasil disinkronkan ke dasbor Anda.
+                </p>
+
+                {syncStats.hasSummary && syncStats.summaryData && (
+                  <div className="mt-3 p-3 rounded-xl bg-white/60 dark:bg-slate-900/40 border border-emerald-200/50 dark:border-emerald-900/40 text-xs text-slate-700 dark:text-slate-300 space-y-1.5 font-sans shadow-sm">
+                    <p className="font-semibold text-teal-700 dark:text-teal-400 mb-2 flex items-center gap-1">
+                      <Database className="h-3 w-3" />
+                      Nilai Ringkasan Terdeteksi (summary/money):
+                    </p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                      <div className="text-slate-500 dark:text-slate-400">Net Balance:</div>
+                      <div className="font-semibold text-right text-slate-900 dark:text-slate-100">Rp {(syncStats.summaryData.netBalance || 0).toLocaleString('id-ID')}</div>
+                      
+                      <div className="text-slate-500 dark:text-slate-400">Total Pengeluaran:</div>
+                      <div className="font-semibold text-right text-rose-600 dark:text-rose-400">Rp {(syncStats.summaryData.totalExpense || 0).toLocaleString('id-ID')}</div>
+                      
+                      <div className="text-slate-500 dark:text-slate-400">Sisa Limit Bulanan:</div>
+                      <div className="font-semibold text-right text-teal-600 dark:text-teal-400">Rp {(syncStats.summaryData.remainingMonthlyLimit || 0).toLocaleString('id-ID')}</div>
+                      
+                      <div className="text-slate-500 dark:text-slate-400">Rata-rata Harian:</div>
+                      <div className="font-semibold text-right text-slate-900 dark:text-slate-100">Rp {Math.round(syncStats.summaryData.avgExpenseDay || 0).toLocaleString('id-ID')}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Warning / Failure Alert Panel */}
+          {syncStatus === 'error' && (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-300 text-sm flex gap-3 items-start animate-in fade-in duration-200">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 flex-1">
+                <p className="font-semibold">Gagal Meminta Data dari Firestore</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-mono bg-amber-100/50 dark:bg-amber-950/40 p-2.5 rounded border border-amber-200/30 break-all leading-relaxed">
+                  {syncError}
+                </p>
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-2 space-y-1">
+                  <p className="font-semibold text-slate-700 dark:text-slate-300">Tips Solusi:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Pastikan Anda sudah login menggunakan Google Account yang valid di server ini.</li>
+                    <li>Verifikasi bahwa database Firestore Anda di Firebase Console memiliki koleksi <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px]">users/{userId}/data</code>.</li>
+                    <li>Gunakan tombol <strong>"Open in new tab"</strong> jika iframe AI Studio memblokir request Firestore.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

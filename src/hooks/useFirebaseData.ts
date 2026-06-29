@@ -279,179 +279,180 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
 
     let limitBulanan = 800000;
     let latestDataSnap: any = null;
+    let summaryMoneyData: any = null;
 
     const calculateData = () => {
-      if (!latestDataSnap) return;
-
       const calcForMonth = (key: string): MoneyData => {
         let totalIncome = 0;
         let totalExpense = 0;
         let dates = new Set<string>();
 
-        latestDataSnap.docs.forEach((d: any) => {
-           const val = d.data();
-           
-           let year = 0;
-           let month = 0;
-           let dateStr = "";
-
-           const rawDate = val.date || val.tanggal || val.createdAt || val.timestamp || val.waktu || val.created_at || val.time;
-           if (rawDate) {
-              if (typeof rawDate === 'string') {
-                 dateStr = rawDate;
-              } else if (typeof rawDate === 'number') {
-                 const dt = new Date(rawDate);
-                 if (!isNaN(dt.getTime())) {
-                     year = dt.getFullYear();
-                     month = dt.getMonth() + 1;
-                 }
-              } else if (rawDate.toDate && typeof rawDate.toDate === 'function') {
-                 const dt = rawDate.toDate();
-                 year = dt.getFullYear();
-                 month = dt.getMonth() + 1;
-              } else if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
-                 year = rawDate.getFullYear();
-                 month = rawDate.getMonth() + 1;
-              }
-           } else if (val.year && val.month) {
-              year = parseYearName(val.year);
-              month = parseMonthName(val.month);
-              dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.day || 1).padStart(2, '0')}`;
-           } else if (val.tahun && val.bulan) {
-              year = parseYearName(val.tahun);
-              month = parseMonthName(val.bulan);
-              dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.hari || val.day || 1).padStart(2, '0')}`;
-           }
-           
-           if (!year || !month) {
-             if (!dateStr) dateStr = String(d.id);
+        if (latestDataSnap) {
+          latestDataSnap.docs.forEach((d: any) => {
+             const val = d.data();
              
-             const cleanDateStr = dateStr.toLowerCase().trim();
+             let year = 0;
+             let month = 0;
+             let dateStr = "";
 
-             // Check for Indonesian/English month name inside string
-             let foundMonth = 0;
-             for (const [mName, mVal] of Object.entries(INDONESIAN_MONTHS_MAP)) {
-               const regex = new RegExp(`\\b${mName}\\b`);
-               if (regex.test(cleanDateStr)) {
-                 foundMonth = mVal;
-                 break;
-               }
-             }
-
-             if (foundMonth) {
-               month = foundMonth;
-               const yearMatch = cleanDateStr.match(/\b(20\d{2})\b/);
-               if (yearMatch) {
-                 year = parseInt(yearMatch[1], 10);
-               }
-             } else {
-               // Check for YYYY-MM-DD or DD-MM-YYYY with various separators (-, /, .)
-               const yyyyMmDdMatch = cleanDateStr.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
-               const ddMmYyyyMatch = cleanDateStr.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
-               
-               if (yyyyMmDdMatch) {
-                  year = parseInt(yyyyMmDdMatch[1], 10);
-                  month = parseInt(yyyyMmDdMatch[2], 10);
-               } else if (ddMmYyyyMatch) {
-                  year = parseInt(ddMmYyyyMatch[3], 10);
-                  month = parseInt(ddMmYyyyMatch[2], 10);
-               } else if (/^\d+$/.test(cleanDateStr)) {
-                   const dt = new Date(parseInt(cleanDateStr, 10));
+             const rawDate = val.date || val.tanggal || val.createdAt || val.timestamp || val.waktu || val.created_at || val.time;
+             if (rawDate) {
+                if (typeof rawDate === 'string') {
+                   dateStr = rawDate;
+                } else if (typeof rawDate === 'number') {
+                   const dt = new Date(rawDate);
                    if (!isNaN(dt.getTime())) {
-                     year = dt.getFullYear();
-                     month = dt.getMonth() + 1;
+                       year = dt.getFullYear();
+                       month = dt.getMonth() + 1;
                    }
+                } else if (rawDate.toDate && typeof rawDate.toDate === 'function') {
+                   const dt = rawDate.toDate();
+                   year = dt.getFullYear();
+                   month = dt.getMonth() + 1;
+                } else if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+                   year = rawDate.getFullYear();
+                   month = rawDate.getMonth() + 1;
+                }
+             } else if (val.year && val.month) {
+                year = parseYearName(val.year);
+                month = parseMonthName(val.month);
+                dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.day || 1).padStart(2, '0')}`;
+             } else if (val.tahun && val.bulan) {
+                year = parseYearName(val.tahun);
+                month = parseMonthName(val.bulan);
+                dateStr = `${year}-${String(month).padStart(2, '0')}-${String(val.hari || val.day || 1).padStart(2, '0')}`;
+             }
+             
+             if (!year || !month) {
+               if (!dateStr) dateStr = String(d.id);
+               
+               const cleanDateStr = dateStr.toLowerCase().trim();
+
+               // Check for Indonesian/English month name inside string
+               let foundMonth = 0;
+               for (const [mName, mVal] of Object.entries(INDONESIAN_MONTHS_MAP)) {
+                 const regex = new RegExp(`\\b${mName}\\b`);
+                 if (regex.test(cleanDateStr)) {
+                   foundMonth = mVal;
+                   break;
+                 }
+               }
+
+               if (foundMonth) {
+                 month = foundMonth;
+                 const yearMatch = cleanDateStr.match(/\b(20\d{2})\b/);
+                 if (yearMatch) {
+                   year = parseInt(yearMatch[1], 10);
+                 }
                } else {
-                   const parsedDate = new Date(cleanDateStr);
-                   if (!isNaN(parsedDate.getTime())) {
-                     year = parsedDate.getFullYear();
-                     month = parsedDate.getMonth() + 1;
-                   }
+                 // Check for YYYY-MM-DD or DD-MM-YYYY with various separators (-, /, .)
+                 const yyyyMmDdMatch = cleanDateStr.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
+                 const ddMmYyyyMatch = cleanDateStr.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
+                 
+                 if (yyyyMmDdMatch) {
+                    year = parseInt(yyyyMmDdMatch[1], 10);
+                    month = parseInt(yyyyMmDdMatch[2], 10);
+                 } else if (ddMmYyyyMatch) {
+                    year = parseInt(ddMmYyyyMatch[3], 10);
+                    month = parseInt(ddMmYyyyMatch[2], 10);
+                 } else if (/^\d+$/.test(cleanDateStr)) {
+                     const dt = new Date(parseInt(cleanDateStr, 10));
+                     if (!isNaN(dt.getTime())) {
+                       year = dt.getFullYear();
+                       month = dt.getMonth() + 1;
+                     }
+                 } else {
+                     const parsedDate = new Date(cleanDateStr);
+                     if (!isNaN(parsedDate.getTime())) {
+                       year = parsedDate.getFullYear();
+                       month = parsedDate.getMonth() + 1;
+                     }
+                 }
                }
              }
-           }
 
-           const [keyYearStr, keyMonthStr] = key.split('-');
-           const keyYear = parseInt(keyYearStr, 10);
-           const keyMonth = parseInt(keyMonthStr, 10);
-           
-           let isMatch = false;
-           if (year && month) {
-             isMatch = (year === keyYear && month === keyMonth);
-           } else {
-             // Fallback string match
-             isMatch = dateStr.includes(key) || dateStr.includes(`${keyMonthStr}-${keyYearStr}`) || dateStr.includes(`${keyYearStr}${keyMonthStr}`);
-           }
+             const [keyYearStr, keyMonthStr] = key.split('-');
+             const keyYear = parseInt(keyYearStr, 10);
+             const keyMonth = parseInt(keyMonthStr, 10);
+             
+             let isMatch = false;
+             if (year && month) {
+               isMatch = (year === keyYear && month === keyMonth);
+             } else {
+               // Fallback string match
+               isMatch = dateStr.includes(key) || dateStr.includes(`${keyMonthStr}-${keyYearStr}`) || dateStr.includes(`${keyYearStr}${keyMonthStr}`);
+             }
 
-           if (!isMatch) return;
+             if (!isMatch) return;
 
-           const parseAmount = (v: any): number => {
-              if (typeof v === 'number') return Math.abs(v);
-              if (typeof v === 'string') {
-                  let cleaned = v.split(',')[0].replace(/[^0-9]/g, '');
-                  return Number(cleaned) || 0;
-              }
-              return 0;
-           };
+             const parseAmount = (v: any): number => {
+                if (typeof v === 'number') return Math.abs(v);
+                if (typeof v === 'string') {
+                    let cleaned = v.split(',')[0].replace(/[^0-9]/g, '');
+                    return Number(cleaned) || 0;
+                }
+                return 0;
+             };
 
-           const isNegativeValue = (v: any): boolean => {
-              if (typeof v === 'number') return v < 0;
-              if (typeof v === 'string') return v.includes('-');
-              return false;
-           };
+             const isNegativeValue = (v: any): boolean => {
+                if (typeof v === 'number') return v < 0;
+                if (typeof v === 'string') return v.includes('-');
+                return false;
+             };
 
-           const isNegative = isNegativeValue(val.amount) || isNegativeValue(val.nominal) || isNegativeValue(val.jumlah) || isNegativeValue(val.value) || isNegativeValue(val.total) || isNegativeValue(val.harga);
-           let amount = parseAmount(val.amount) || parseAmount(val.nominal) || parseAmount(val.jumlah) || parseAmount(val.value) || parseAmount(val.total) || parseAmount(val.harga);
-           const typeStr = String(val.type || val.tipe || val.jenis || val.kategori || val.status || '').toLowerCase().trim();
-           
-           let isProcessed = false;
-           if (val.pemasukan !== undefined && val.pemasukan !== null && parseAmount(val.pemasukan) > 0) {
-              totalIncome += parseAmount(val.pemasukan);
-              isProcessed = true;
-           }
-           if (val.pengeluaran !== undefined && val.pengeluaran !== null && parseAmount(val.pengeluaran) > 0) {
-              totalExpense += parseAmount(val.pengeluaran);
-              isProcessed = true;
-           }
-           if (val.income !== undefined && val.income !== null && parseAmount(val.income) > 0) {
-              totalIncome += parseAmount(val.income);
-              isProcessed = true;
-           }
-           if (val.expense !== undefined && val.expense !== null && parseAmount(val.expense) > 0) {
-              totalExpense += parseAmount(val.expense);
-              isProcessed = true;
-           }
+             const isNegative = isNegativeValue(val.amount) || isNegativeValue(val.nominal) || isNegativeValue(val.jumlah) || isNegativeValue(val.value) || isNegativeValue(val.total) || isNegativeValue(val.harga);
+             let amount = parseAmount(val.amount) || parseAmount(val.nominal) || parseAmount(val.jumlah) || parseAmount(val.value) || parseAmount(val.total) || parseAmount(val.harga);
+             const typeStr = String(val.type || val.tipe || val.jenis || val.kategori || val.status || '').toLowerCase().trim();
+             
+             let isProcessed = false;
+             if (val.pemasukan !== undefined && val.pemasukan !== null && parseAmount(val.pemasukan) > 0) {
+                totalIncome += parseAmount(val.pemasukan);
+                isProcessed = true;
+             }
+             if (val.pengeluaran !== undefined && val.pengeluaran !== null && parseAmount(val.pengeluaran) > 0) {
+                totalExpense += parseAmount(val.pengeluaran);
+                isProcessed = true;
+             }
+             if (val.income !== undefined && val.income !== null && parseAmount(val.income) > 0) {
+                totalIncome += parseAmount(val.income);
+                isProcessed = true;
+             }
+             if (val.expense !== undefined && val.expense !== null && parseAmount(val.expense) > 0) {
+                totalExpense += parseAmount(val.expense);
+                isProcessed = true;
+             }
 
-           if (!isProcessed) {
-              if (val.isIncome === true || val.isPemasukan === true) {
-                 totalIncome += amount;
-              } else if (val.isExpense === true || val.isPengeluaran === true) {
-                 totalExpense += amount;
-              } else if (isNegative) {
-                 totalExpense += amount;
-              } else {
-                  if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
-                    totalIncome += amount;
-                  } else if (['expense', 'pengeluaran', 'out', 'keluar'].includes(typeStr) || typeStr === '') {
-                    // Default to expense if empty/unrecognized
-                    totalExpense += amount;
-                  }
-              }
-           }
-           
-           // For unique dates count
-           let dateKey = dateStr;
-           if (year && month) {
-              const dt = new Date(year, month - 1, val.day || 1); // rough fallback
-              if (rawDate && (typeof rawDate === 'number' || rawDate.toDate || rawDate instanceof Date)) {
-                let actualDt = rawDate instanceof Date ? rawDate : (rawDate.toDate ? rawDate.toDate() : new Date(rawDate));
-                dateKey = `${actualDt.getFullYear()}-${actualDt.getMonth()+1}-${actualDt.getDate()}`;
-              } else if (dateStr) {
-                dateKey = dateStr.slice(0, 10);
-              }
-           }
-           dates.add(dateKey);
-        });
+             if (!isProcessed) {
+                if (val.isIncome === true || val.isPemasukan === true) {
+                   totalIncome += amount;
+                } else if (val.isExpense === true || val.isPengeluaran === true) {
+                   totalExpense += amount;
+                } else if (isNegative) {
+                   totalExpense += amount;
+                } else {
+                    if (['income', 'pemasukan', 'in', 'masuk'].includes(typeStr)) {
+                      totalIncome += amount;
+                    } else if (['expense', 'pengeluaran', 'out', 'keluar'].includes(typeStr) || typeStr === '') {
+                      // Default to expense if empty/unrecognized
+                      totalExpense += amount;
+                    }
+                }
+             }
+             
+             // For unique dates count
+             let dateKey = dateStr;
+             if (year && month) {
+                const dt = new Date(year, month - 1, val.day || 1); // rough fallback
+                if (rawDate && (typeof rawDate === 'number' || rawDate.toDate || rawDate instanceof Date)) {
+                  let actualDt = rawDate instanceof Date ? rawDate : (rawDate.toDate ? rawDate.toDate() : new Date(rawDate));
+                  dateKey = `${actualDt.getFullYear()}-${actualDt.getMonth()+1}-${actualDt.getDate()}`;
+                } else if (dateStr) {
+                  dateKey = dateStr.slice(0, 10);
+                }
+             }
+             dates.add(dateKey);
+          });
+        }
 
         const daysFilled = dates.size || 1; // avoid div by 0
         
@@ -463,11 +464,42 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
         };
       };
 
+      const calculatedThis = calcForMonth(monthYearKey);
+      const calculatedLast = calcForMonth(prevKey);
+
+      let thisMonthVal: MoneyData = {
+        ...getDefaultMoney(monthYearKey),
+        ...calculatedThis
+      };
+
+      if (summaryMoneyData) {
+        thisMonthVal = {
+          netBalance: typeof summaryMoneyData.netBalance === 'number' ? summaryMoneyData.netBalance : thisMonthVal.netBalance,
+          totalExpense: typeof summaryMoneyData.totalExpense === 'number' ? summaryMoneyData.totalExpense : thisMonthVal.totalExpense,
+          avgExpenseDay: typeof summaryMoneyData.avgExpenseDay === 'number' ? summaryMoneyData.avgExpenseDay : thisMonthVal.avgExpenseDay,
+          remainingMonthlyLimit: typeof summaryMoneyData.remainingMonthlyLimit === 'number' ? summaryMoneyData.remainingMonthlyLimit : thisMonthVal.remainingMonthlyLimit,
+        };
+      }
+
       setData({
-        thisMonth: calcForMonth(monthYearKey),
-        lastMonth: calcForMonth(prevKey)
+        thisMonth: thisMonthVal,
+        lastMonth: {
+          ...getDefaultMoney(prevKey),
+          ...calculatedLast
+        }
       });
     };
+
+    const unsubSummary = onSnapshot(doc(db, 'users', userId, 'summary', 'money'), (snap) => {
+      if (snap.exists()) {
+        summaryMoneyData = snap.data();
+      } else {
+        summaryMoneyData = null;
+      }
+      calculateData();
+    }, (error) => {
+      console.error("Firestore permission error for summary/money:", error);
+    });
 
     const unsubConfig = onSnapshot(collection(db, 'users', userId, 'config'), (snap) => {
       if (!snap.empty) {
@@ -492,6 +524,7 @@ export function useMoneyData(userId: string | undefined, monthYearKey: string) {
     });
 
     return () => {
+      unsubSummary();
       unsubConfig();
       unsubData();
     };
