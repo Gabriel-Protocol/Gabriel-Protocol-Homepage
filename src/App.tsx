@@ -5,7 +5,7 @@ import { MainTab } from './components/MainTab';
 import { GoalsTab } from './components/GoalsTab';
 import { EvaluationTab } from './components/EvaluationTab';
 import { SettingsTab } from './components/SettingsTab';
-import { GabrielLogo } from './components/GabrielLogo';
+import gabrielLogoImg from './assets/images/gabriel_logo_1782728087789.jpg';
 import { 
   LayoutDashboard, 
   Target, 
@@ -288,13 +288,18 @@ export default function App() {
         {/* Left: Logo + Title + Status Pill */}
         <div className="flex items-center gap-4">
           {/* Gabriel Protocol Planet Logo (Gambar 2) */}
-          <div className="flex-shrink-0 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-transform hover:scale-105 duration-300">
-            <GabrielLogo size={62} />
+          <div className="flex-shrink-0 bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-transform hover:scale-105 duration-300">
+            <img 
+              src={gabrielLogoImg} 
+              alt="Gabriel Protocol Logo" 
+              className="w-14 h-14 object-contain rounded-xl"
+              referrerPolicy="no-referrer"
+            />
           </div>
           
           <div className="flex flex-col">
-            <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50 tracking-tight leading-tight">
-              GB - Money Management
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50 tracking-tight leading-tight uppercase">
+              GABRIEL PROTOCOL
             </h1>
             <div className="mt-1 flex items-center">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-teal-50/80 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400 border border-teal-100/60 dark:border-teal-900/30">
